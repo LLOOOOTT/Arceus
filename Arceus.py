@@ -102,6 +102,7 @@ async def arcet(ctx, *args):
 		else:
 			if args[0] == "초기":
 				await ctx.send("<:cs_settings:659355468992610304> {} - 이미 초기 설정이 완료된 서버에요. 삭제는 관리자에게 문의해주세요.".format(ctx.author.mention))
+			
 			if args[0] == "로그":
 				yee = await ctx.send("<:cs_settings:659355468992610304> {} - 서버 이벤트 로그를 켜시겠어요?\n<:cs_yes:659355468715786262> - 예\n<:cs_no:659355468816187405> - 아니오".format(ctx.author.mention))
 				await yee.add_reaction("<:cs_yes:659355468715786262>")
@@ -120,6 +121,8 @@ async def arcet(ctx, *args):
 						cur.execute("UPDATE log SET enabled = 'true' WHERE guild = {}".format(ctx.guild.id))
 						conn.commit()
 						conn.close()
+						await yee.clear_reactions()
+						await yee.add_reaction("<:cs_settings:659355468992610304>")
 						await yee.edit(content="<:cs_yes:659355468715786262> {} - 로그 기능을 활성화했어요. 채널을 설정하려면 아래 <:cs_settings:659355468992610304> 반응을 눌러주세요.".format(ctx.author.mention), suppress=False)
 						def check(reaction, user):
 							return user == ctx.author and reaction.message.channel == ctx.channel and str(reaction.emoji) == "<:cs_settings:659355468992610304>"
@@ -127,6 +130,7 @@ async def arcet(ctx, *args):
 						try:
 							reaction, user = await bot.wait_for('reaction_add', timeout=10, check=check)
 						except asyncio.TimeoutError:
+							await yee.clear_reactions()
 							conn = sqlite3.connect("lib/data.db")
 							cur = conn.cursor()
 							cur.execute("SELECT * FROM log WHERE guild = {}".format(ctx.guild.id))
@@ -140,6 +144,7 @@ async def arcet(ctx, *args):
 								else:
 									await yee.edit(content="<:cs_yes:659355468715786262> {0} - 로그 채널을 변경하지 않으시는 걸로 알아둘게요! 현재 로그 채널은 <#{1}> 채널이에요.".format(ctx.author.mention, rows[0][1]), suppress=False, delete_after=10)
 						else:
+							await yee.clear_reactions()
 							await yee.edit(content="<:cs_settings:659355468992610304> {} - 이벤트 로그를 전송할 채널을 멘션해주세요.".format(ctx.author.mention), suppress=False)
 							def check(msg):
 								return msg.author == ctx.author and msg.channel == ctx.channel
@@ -162,16 +167,16 @@ async def arcet(ctx, *args):
 										conn.commit()
 										conn.close()
 										await yee.edit(content="<:cs_yes:659355468715786262> {0} - 로그 채널 변경을 완료했어요! 현재 로그 채널은 <#{1}> 채널이에요.".format(ctx.author.mention, msg.channel_mentions[0].id), suppress=False, delete_after=10)
-					else:
-						if str(reaction.emoji) == "<:cs_no:659355468816187405>":
-							conn = sqlite3.connect("lib/data.db")
-							cur = conn.cursor()
-							cur.execute("UPDATE log SET enabled = 'false' WHERE guild = {}".format(ctx.guild.id))
-							conn.commit()
-							conn.close()
-							await yee.edit(content="<:cs_yes:659355468715786262> {} - 로그 기능을 비활성화했어요. 더 이상 이벤트를 로깅하지 않아요.".format(ctx.author.mention), suppress=False)
-						else:
-							await yee.edit(content="<:cs_no:659355468816187405> {} - 잘못된 값을 입력하셨어요. 아키셋을 취소할게요.".format(ctx.author.mention), suppress=False, delete_after=5)
+						
+					if str(reaction.emoji) == "<:cs_no:659355468816187405>":
+						conn = sqlite3.connect("lib/data.db")
+						cur = conn.cursor()
+						cur.execute("UPDATE log SET enabled = 'false' WHERE guild = {}".format(ctx.guild.id))
+						conn.commit()
+						conn.close()
+						await yee.clear_reactions()
+						await yee.edit(content="<:cs_yes:659355468715786262> {} - 로그 기능을 비활성화했어요. 더 이상 이벤트를 로깅하지 않아요.".format(ctx.author.mention), suppress=False)
+						
 			if args[0] == "입장":
 				ws = await ctx.send("<:cs_settings:659355468992610304> {} - 유저 환영 기능을 켜시겠어요?\n<:cs_yes:659355468715786262> - 예\n<:cs_no:659355468816187405> - 아니오".format(ctx.author.mention))
 				await ws.add_reaction("<:cs_yes:659355468715786262>")
@@ -236,6 +241,7 @@ async def arcet(ctx, *args):
 								conn.commit()
 								conn.close()
 								await msg.delete()
+								await ws.clear_reactions()
 								await ws.edit(content="<:cs_settings:659355468992610304> {} - 메시지를 전송할 채널을 멘션해주세요.".format(ctx.author.mention), suppress=False)
 								def check(cmsg):
 									return cmsg.author == ctx.author and cmsg.channel == ctx.channel
@@ -258,16 +264,16 @@ async def arcet(ctx, *args):
 										latest3 = latest2.replace("{1.member_count}", str(ctx.guild.member_count))
 										await ws.edit(content="<:cs_yes:659355468715786262> 설정이 완료되었어요.\n이제 유저가 들어올 때마다 <#{0}> 채널에 {1}(이)라고 알림을 전송할 거에요.\n비활성화하려면 `.아키셋 입장` 명령어를 사용해주세요.".format(cmsg.channel_mentions[0].id, latest3), suppress=False, delete_after=20)
 										await cmsg.delete()
-					else:
-						if str(reaction.emoji) == "<:cs_no:659355468816187405>":
-							conn = sqlite3.connect("lib/data.db")
-							cur = conn.cursor()
-							cur.execute("UPDATE customWelcome SET enabled = 'false' WHERE guild = {}".format(ctx.guild.id))
-							conn.commit()
-							conn.close()
-							await yee.edit(content="<:cs_yes:659355468715786262> {} - 유저 환영 기능을 비활성화했어요. 더 이상 유저가 입장해도 알림을 전송하지 않아요.".format(ctx.author.mention), suppress=False, delete_after=10)
-						else:
-							await yee.edit(content="<:cs_no:659355468816187405> {} - 잘못된 값을 입력하셨어요. 아키셋을 취소할게요.".format(ctx.author.mention), suppress=False, delete_after=5)
+
+					if str(reaction.emoji) == "<:cs_no:659355468816187405>":
+						conn = sqlite3.connect("lib/data.db")
+						cur = conn.cursor()
+						cur.execute("UPDATE customWelcome SET enabled = 'false' WHERE guild = {}".format(ctx.guild.id))
+						conn.commit()
+						conn.close()
+						await ws.clear_reactions()
+						await ws.edit(content="<:cs_yes:659355468715786262> {} - 유저 환영 기능을 비활성화했어요. 더 이상 유저가 입장해도 알림을 전송하지 않아요.".format(ctx.author.mention), suppress=False, delete_after=10)
+					
 			if args[0] == "퇴장":
 				ws = await ctx.send("<:cs_settings:659355468992610304> {} - 유저 퇴장 알림 기능을 켜시겠어요?\n<:cs_yes:659355468715786262> - 예\n<:cs_no:659355468816187405> - 아니오".format(ctx.author.mention))
 				await ws.add_reaction("<:cs_yes:659355468715786262>")
@@ -354,16 +360,16 @@ async def arcet(ctx, *args):
 										latest3 = latest2.replace("{1.member_count}", str(ctx.guild.member_count))
 										await ws.edit(content="<:cs_yes:659355468715786262> 설정이 완료되었어요.\n이제 유저가 나갈 때마다 <#{0}> 채널에 {1}(이)라고 알림을 전송할 거에요.\n비활성화하려면 `.아키셋 퇴장` 명령어를 사용해주세요.".format(cmsg.channel_mentions[0].id, latest3), suppress=False, delete_after=20)
 										await cmsg.delete()
-					else:
-						if str(reaction.emoji) == "<:cs_no:659355468816187405>":
-							conn = sqlite3.connect("lib/data.db")
-							cur = conn.cursor()
-							cur.execute("UPDATE customWelcome SET enabled = 'false' WHERE guild = {}".format(ctx.guild.id))
-							conn.commit()
-							conn.close()
-							await yee.edit(content="<:cs_yes:659355468715786262> {} - 유저 퇴장 알림 기능을 비활성화했어요. 더 이상 유저가 나가도 알림을 전송하지 않아요.".format(ctx.author.mention), suppress=False, delete_after=10)
-						else:
-							await yee.edit(content="<:cs_no:659355468816187405> {} - 잘못된 값을 입력하셨어요. 아키셋을 취소할게요.".format(ctx.author.mention), suppress=False, delete_after=5)
+					
+					if str(reaction.emoji) == "<:cs_no:659355468816187405>":
+						conn = sqlite3.connect("lib/data.db")
+						cur = conn.cursor()
+						cur.execute("UPDATE customBye SET enabled = 'false' WHERE guild = {}".format(ctx.guild.id))
+						conn.commit()
+						conn.close()
+						await ws.clear_reactions()
+						await ws.edit(content="<:cs_yes:659355468715786262> {} - 유저 퇴장 알림 기능을 비활성화했어요. 더 이상 유저가 나가도 알림을 전송하지 않아요.".format(ctx.author.mention), suppress=False, delete_after=10)
+					
 			if args[0] == "공지":
 				announce = await ctx.send("<:cs_settings:659355468992610304> {} - 아키우스의 공지를 받아보시겠어요? [ 비활성화해도 중요공지는 반드시 전송됩니다. ]\n<:cs_yes:659355468715786262> - 예\n<:cs_no:659355468816187405> - 아니오".format(ctx.author.mention))
 				await announce.add_reaction("<:cs_yes:659355468715786262>")
@@ -429,6 +435,7 @@ async def arcet(ctx, *args):
 										await announce.edit(content="<:cs_yes:659355468715786262> {0} - 이제 아키우스의 공지 및 알림 사항이 모두 <#{1}> 채널에 전송될거에요!".format(ctx.author.mention, chtest.id))
 									else:
 										await announce.edit(content="<:cs_no:659355468816187405> {} - 잘못된 값을 입력하셨어요. 채널 설정을 취소할게요.".format(ctx.author.mention), delete_after=5)
+					
 					if str(reaction.emoji) == "<:cs_no:659355468816187405>":
 						await announce.clear_reactions()
 						conn = sqlite3.connect("lib/data.db")
@@ -437,8 +444,6 @@ async def arcet(ctx, *args):
 						conn.commit()
 						conn.close()
 						await announce.edit(content="<:cs_yes:659355468715786262> {} - 아키우스 알림 기능을 비활성화했어요!".format(ctx.author.mention), delete_after=10)
-			if args[0] == "관리자":
-				await ctx.send("<:cs_no:659355468816187405> {} - 아직 준비중인 기능이에요.".format(ctx.author.mention))
 							
 @bot.command(name="추방")
 @has_permissions(kick_members=True)
@@ -581,18 +586,18 @@ async def serverlist(ctx):
 					ginvites = await guild.invites()
 					if not ginvites:
 						try:
-							ginvite = await guild.channels[0].create_invite()
-							em.add_field(name="#{}".format(i), value="**{1.name}** ({1.id}) Invite :: {2}".format(i, guild, ginvite.url), inline=False)
+							ginvite = await guild.text_channels[0].create_invite()
+							em.add_field(name="#{}".format(i), value="**{1.name}** ({1.id}, `{1.member_count}`명) Invite :: {2}".format(i, guild, ginvite.url), inline=False)
 						except:
-							em.add_field(name="#{}".format(i), value="**{1.name}** ({1.id}) Invite :: `초대 링크를 불러올 수 없었어요.`".format(i, guild), inline=False)
+							em.add_field(name="#{}".format(i), value="**{1.name}** ({1.id}, `{1.member_count}`명) Invite :: `초대 링크를 불러올 수 없었어요.`".format(i, guild), inline=False)
 					else:
-						em.add_field(name="#{}".format(i), value="**{1.name}** ({1.id}) Invite :: {2}".format(i, guild, ginvites[0].url), inline=False)
+						em.add_field(name="#{}".format(i), value="**{1.name}** ({1.id}, `{1.member_count}`명) Invite :: {2}".format(i, guild, ginvites[0].url), inline=False)
 				except:
 					try:
-						ginvite = await guild.channels[0].create_invite()
-						em.add_field(name="#{}".format(i), value="**{1.name}** ({1.id}) Invite :: {2}".format(i, guild, ginvite.url), inline=False)
+						ginvite = await guild.text_channels[0].create_invite()
+						em.add_field(name="#{}".format(i), value="**{1.name}** ({1.id}, `{1.member_count}`명) Invite :: {2}".format(i, guild, ginvite.url), inline=False)
 					except:
-						em.add_field(name="#{}".format(i), value="**{1.name}** ({1.id}) Invite :: `초대 링크를 불러올 수 없었어요.`".format(i, guild), inline=False)
+						em.add_field(name="#{}".format(i), value="**{1.name}** ({1.id}, `{1.member_count}`명) Invite :: `초대 링크를 불러올 수 없었어요.`".format(i, guild), inline=False)
 				i += 1
 		try:
 			await ctx.send(ctx.author.mention, embed=em)
@@ -610,27 +615,46 @@ async def serverlist_legacy(ctx):
 	if rows[0][1] == 'Administrator' or rows[0][1] == "Owner" or ctx.author.id in owners:
 		await ctx.send("현재 길드 개수는 {}개에요. 길드 목록 :".format(len(bot.guilds)))
 		i = 1
-		for guild in bot.guilds:
-			async with ctx.channel.typing():
+		async with ctx.channel.typing():
+			for guild in bot.guilds:
 				try:
 					ginvites = await guild.invites()
 					if not ginvites:
 						try:
-							ginvite = await guild.channels[0].create_invite(reason="아키우스 디버깅")
-							await ctx.send("#{0} - **{1.name}** ({1.id}) Invite :: {2}".format(i, guild, ginvite.url))
+							ginvite = await guild.text_channels[0].create_invite(reason="아키우스 디버깅")
+							await ctx.send("#{0} - **{1.name}** ({1.id}, `{1.member_count}`명) Invite :: {2}".format(i, guild, ginvite.url))
 						except:
-							await ctx.send("#{0} - **{1.name}** ({1.id}) Invite :: `초대 링크를 불러올 수 없었어요.`".format(i, guild))
+							await ctx.send("#{0} - **{1.name}** ({1.id}, `{1.member_count}`명) Invite :: `초대 링크를 불러올 수 없었어요.`".format(i, guild))
 					else:
-						await ctx.send("#{0} - **{1.name}** ({1.id}) Invite :: {2}".format(i, guild, ginvites[0].url))
+						await ctx.send("#{0} - **{1.name}** ({1.id}, `{1.member_count}`명) Invite :: {2}".format(i, guild, ginvites[0].url))
 				except:
 					try:
-						ginvite = await guild.channels[0].create_invite(reason="아키우스 디버깅")
-						await ctx.send("#{0} - **{1.name}** ({1.id}) Invite :: {2}".format(i, guild, ginvite.url))
+						ginvite = await guild.text_channels[0].create_invite(reason="아키우스 디버깅")
+						await ctx.send("#{0} - **{1.name}** ({1.id}, `{1.member_count}`명) Invite :: {2}".format(i, guild, ginvite.url))
 					except:
-						await ctx.send("#{0} - **{1.name}** ({1.id}) Invite :: `초대 링크를 불러올 수 없었어요.`".format(i, guild))
+						await ctx.send("#{0} - **{1.name}** ({1.id}, `{1.member_count}`명) Invite :: `초대 링크를 불러올 수 없었어요.`".format(i, guild))
 				i += 1
 	else:
 		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `봇 관리자` 권한이 있어야 해요.".format(ctx.author.mention))
+
+@bot.command(name="접속")
+async def comehere(ctx):
+	if ctx.author.id in owners:
+		await ctx.author.voice.channel.connect()
+		await ctx.send("<:cs_yes:659355468715786262> {0.mention} - 당신이 있는 `{0.voice.channel.name}` 채널에 연결했어요!".format(ctx.author))
+	else:
+		await ctx.send("<:cs_no:659355468816187405> {} - 죄송해요. 이 명령어는 아직 사용하실 수 없어요.".format(ctx.author.mention))
+
+@bot.command(name="꺼져")
+async def ggeojyeo(ctx, *args):
+	if ctx.author.id in owners:
+		if not args:
+			await bot.voice_clients[0].disconnect()
+		else:
+			t = args[0]
+			await bot.voice_clients[t].disconnect()
+	else:
+		await ctx.send("<:cs_no:659355468816187405> {} - 죄송해요. 이 명령어는 아직 사용하실 수 없어요.".format(ctx.author.mention))
 
 @bot.command(name="유저")
 async def user_count(ctx):
@@ -641,7 +665,31 @@ async def user_count(ctx):
 	if rows[0][1] == 'Administrator' or rows[0][1] == "Owner" or ctx.author.id in owners:
 		async with ctx.channel.typing():
 			await asyncio.sleep(3)
-			await ctx.send("현재 유저 명수는 **{}**명이에요.".format(len(bot.users)))
+			botc = 0
+			human = 0
+			for u in bot.users:
+				if u.bot:
+					botc += 1
+				else:
+					human += 1
+			await ctx.send("현재 집계된 계정은 **{0}**개에요.\n봇 개수 : `{1}`개\n유저 명수 : `{2}`명".format(len(bot.users), botc, human))
+	else:
+		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `봇 관리자` 권한이 있어야 해요.".format(ctx.author.mention))
+
+@bot.command(name="유저목록")
+async def user_count(ctx):
+	conn = sqlite3.connect("lib/data.db")
+	cur = conn.cursor()
+	cur.execute("SELECT * FROM users WHERE user = {}".format(ctx.author.id))
+	rows = cur.fetchall()
+	if rows[0][1] == 'Administrator' or rows[0][1] == "Owner" or ctx.author.id in owners:
+		async with ctx.channel.typing():
+			await asyncio.sleep(3)
+			pin = await ctx.send("현재 집계된 계정은 **{}**개에요.".format(len(bot.users)))
+			await pin.pin()
+			for u in bot.users:
+				if u.bot != True:
+					await ctx.send("{0.name}#{0.discriminator} ({0.id})".format(u))
 	else:
 		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `봇 관리자` 권한이 있어야 해요.".format(ctx.author.mention))
 
@@ -653,11 +701,21 @@ async def channel_counter(ctx):
 	rows = cur.fetchall()
 	if rows[0][1] == 'Administrator' or rows[0][1] == "Owner" or ctx.author.id in owners:
 		async with ctx.channel.typing():
-			channel_countm = 0
+			all = 0
+			cate = 0
+			text = 0
+			voice = 0
 			for guild in bot.guilds:
 				for channel in guild.channels:
-					channel_countm += 1
-			await ctx.send("현재 채널 개수는 **{}**개에요.".format(channel_countm))
+					all += 1
+				for category in guild.categories:
+					cate += 1
+				for text_channel in guild.text_channels:
+					text += 1
+				for voice_channel in guild.voice_channels:
+					voice += 1
+			await asyncio.sleep(3)
+		await ctx.send("현재 채널 개수는 **{0}**개에요.\n카테고리 : `{1}`개\n채팅 채널 `{2}`개\n음성 채널 : `{3}`개".format(all, cate, text, voice))
 	else:
 		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `봇 관리자` 권한이 있어야 해요.".format(ctx.author.mention))
 
@@ -759,14 +817,14 @@ async def profilefinder(ctx, *args):
 			em.set_image(url=ctx.message.mentions[0].avatar_url_as(format="png", size=2048))
 			await ctx.send(ctx.author.mention, embed=em)
 			
-@bot.command(name="주작2")
-async def test(ctx):
+@bot.command(name="루트")
+async def evaluate(ctx):
 	conn = sqlite3.connect("lib/data.db")
 	cur = conn.cursor()
 	cur.execute("SELECT * FROM users WHERE user = {}".format(ctx.author.id))
 	rows = cur.fetchall()
 	if rows[0][1] == 'Administrator' or rows[0][1] == "Owner" or ctx.author.id in owners:
-		await eval(ctx.message.content[5:])
+		exec(ctx.message.content[4:])
 	else:
 		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `봇 관리자` 권한이 있어야 해요.".format(ctx.author.mention))
 
@@ -842,11 +900,18 @@ async def seterror(ctx, error):
 	if isinstance(error, CheckFailure):
 		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `서버 관리` 권한이 있어야 해요.".format(ctx.author.mention))
 
+@evaluate.error
+async def evalerror(ctx, error):
+	await ctx.send("입력한 구문을 실행하고 있는데 오류가 발생했어요.\n`{}`".format(error))
+
 @bot.event
 async def on_message(msg):
 	if msg.author == bot.user:
 		return 
 	
+	if msg.author.bot:
+		return
+
 	if msg.channel.type == discord.ChannelType.private:
 		return
 
@@ -917,11 +982,11 @@ async def on_guild_remove(guild):
 	if not rows:
 		conn.close()
 	else:
-		cur.execute("DELETE * FROM servers WHERE guild = {}".format(guild.id))
-		cur.execute("DELETE * FROM log WHERE guild = {}".format(guild.id))
-		cur.execute("DELETE * FROM announce WHERE guild = {}".format(guild.id))
-		cur.execute("DELETE * FROM customWelcome WHERE guild = {}".format(guild.id))
-		cur.execute("DELETE * FROM customBye WHERE guild = {}".format(guild.id))
+		cur.execute("DELETE FROM servers WHERE guild = {}".format(guild.id))
+		cur.execute("DELETE FROM log WHERE guild = {}".format(guild.id))
+		cur.execute("DELETE FROM announce WHERE guild = {}".format(guild.id))
+		cur.execute("DELETE FROM customWelcome WHERE guild = {}".format(guild.id))
+		cur.execute("DELETE FROM customBye WHERE guild = {}".format(guild.id))
 
 @bot.event
 async def on_member_join(member):
