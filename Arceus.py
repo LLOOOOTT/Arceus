@@ -9,7 +9,6 @@ import asyncio
 import random
 import re
 import datetime
-from datetime import time, tzinfo, timezone, timedelta
 from lib import settings
 import typing
 
@@ -70,6 +69,97 @@ async def ban(ctx, members: commands.Greedy[discord.Member],
 				await ctx.send("<:cs_yes:659355468715786262> {0.mention} - {1.name}#{1.discriminator}님을 서버에서 차단했어요!\n사유 : {2}\n메시지 지우기 : `{3}일 간의 메시지 삭제`".format(ctx.author, member, reason, delete))
 			except:
 				await ctx.send("<:cs_yes:659355468715786262> {0.mention} - {1.name}#{1.discriminator}님을 차단할 수 없었어요. 권한이 없거나, 그 유저가 아키우스보다 높아요.".format(ctx.author, member, reason, delete))
+
+@bot.command(name="루기아")
+async def auth(ctx, *args):
+	if ctx.guild.id == 675931753780609033:
+		Confirmed = discord.utils.get(ctx.guild.roles, id=693002727453884426)
+		if Confirmed in ctx.author.roles:
+			await ctx.send("<:cs_no:659355468816187405> {} - 이미 접근이 승인되셨어요.".format(ctx.author.mention))
+		else:
+			if not args:
+				await ctx.send("<:cs_no:659355468816187405> {} - 자신의 DiscordTag#0000 을 입력해주세요!".format(ctx.author.mention))
+			else:
+				if args[0] == "{0.name}#{0.discriminator}".format(ctx.author):
+					await ctx.author.add_roles(Confirmed)
+					await ctx.author.send("<:cs_yes:659355468715786262> {} - 인증되셨어요! 이제 서포트 채널의 모든 채널에 접근하실 수 있어요.".format(ctx.author.mention))
+				else:
+					await ctx.send("<:cs_no:659355468816187405> {} - DiscordTag#0000이 잘못 입력되었어요. 자신의 태그를 입력해주세요!".format(ctx.author.mention))
+	else:
+		await ctx.send("<:cs_no:659355468816187405> {} - 이 명령어는 아키우스 서포트 채널에서만 사용하실 수 있어요.".format(ctx.author.mention))
+
+@bot.command(name="유저정보")
+async def uinfo(ctx, *args):
+	if not args:
+		uemb = discord.Embed(title="{0.name}#{0.discriminator}님의 정보에요!".format(ctx.author), color=0xF4EB94)
+		uemb.set_author(name="정보", icon_url=bot.user.avatar_url_as(format="png", size=2048))
+		uemb.set_footer(text="아키우스 | {}".format(version))
+		uemb.set_thumbnail(url=ctx.author.avatar_url_as(format="png", size=2048))
+		uemb.add_field(name="이름", value=ctx.author.name)
+		uemb.add_field(name="태그", value=ctx.author.discriminator)
+		if ctx.author.status == discord.Status.online:
+			uemb.add_field(name="현재 상태", value="온라인")
+		if ctx.author.status == discord.Status.idle:
+			uemb.add_field(name="현재 상태", value="자리 비움")
+		if ctx.author.status == discord.Status.dnd:
+			uemb.add_field(name="현재 상태", value="다른 용무 중")
+		if ctx.author.status == discord.Status.offline:
+			uemb.add_field(name="현재 상태", value="오프라인")
+		uemb.add_field(name="역할", value=len(ctx.author.roles) + "개")
+		uemb.add_field
+		uemb.add_field(name="유저 ID", value=ctx.author.id)
+		uemb.add_field(name="디스코드 가입일", value=ctx.author.created_at.strftime('%Y년 %m월 %d일 %H:%M'), inline=False)
+		uemb.add_field(name="{} 가입일".format(ctx.guild.name), value=ctx.author.joined_at.strftime('%Y년 %m월 %d일 %H:%M'), inline=False)
+		
+		await ctx.send(embed=uemb)
+
+@bot.command(name="아키")
+async def feed(ctx, *args):
+	if not args:
+		await ctx.send("<:cs_no:659355468816187405> {} - 아무것도 적지 않으시면 보내실 수 없어요.".format(ctx.author.mention))
+	else:
+		if len(ctx.message.content[4:]) < 5:
+			await ctx.send("<:cs_no:659355468816187405> {} - 5글자 미만의 피드백은 보내실 수 없어요.".format(ctx.author.mention))
+		else:
+			embed = discord.Embed(title="{0.name}#{0.discriminator} 님의 피드백!", description=ctx.message.content[4:], color=0xF4EB94)
+			embed.set_author(name="건의 / 문의", icon_url=bot.user.avatar_url_as(format="png", size=2048))
+			embed.set_thumbnail(url=ctx.author.avatar_url_as(format="png", size=2048))
+			embed.set_footer(text="아키우스 | {}".format(version))
+			await ctx.send("<:cs_console:659355468786958356> {} - 정말로 개발자에게 이렇게 전송하시겠어요?".format(ctx.author.mention), embed=embed)
+			def check(reaction, user):
+				return user == ctx.author and reaction.message.channel == ctx.channel
+			
+			try:
+				reaction, user = await bot.wait_for('reaction_add', timeout=30, check=check)
+			except asyncio.TimeoutError:
+				await ctx.send("<:cs_no:659355468816187405> {} - 반응이 없으셔서 전송을 취소했어요.".format(ctx.author.mention))
+			else:
+				if str(reaction.emoji) == "<:cs_yes:659355468715786262>":
+					develop = bot.get_user(int(owners[0]))
+					await develop.send(develop.mention, embed=embed)
+					await ctx.send("<:cs_yes:659355468715786262> {} - 개발자에게 전송을 완료했어요!".format(ctx.author.mention))
+				else:
+					if str(reaction.emoji) == "<:cs_no:659355468816187405>":
+						await ctx.send("<:cs_yes:659355468715786262> {} - 피드백 전송을 취소했어요!".format(ctx.author.mention))
+					else:
+						await ctx.send("<:cs_no:659355468816187405> {} - 잘못된 이모지를 입력하셨어요. 피드백 전송을 취소했어요!".format(ctx.author.mention))
+
+@bot.command(name="업로드")
+async def upload(ctx, *args):
+	conn = sqlite3.connect("lib/data.db")
+	cur = conn.cursor()
+	cur.execute("SELECT * FROM users WHERE user = {}".format(ctx.author.id))
+	rows = cur.fetchall()
+	if rows[0][1] == 'Administrator' or rows[0][1] == "Owner" or ctx.author.id in owners:
+		if not args:
+			await ctx.send("<:cs_no:659355468816187405> {} - 공백은 업로드 할 수 없어요.".format(ctx.author.mention))
+		else:
+			try:
+				await ctx.send("<:cs_yes:659355468715786262> {0} - 이 파일이 맞나요? `{1}`".format(ctx.author.mention, args[0]), file=discord.File(args[0]))
+			except FileNotFoundError:
+				await ctx.send("<:cs_no:659355468816187405> {} -  그런 파일은 봇 폴더 내에 존재하지 않아요.".format(ctx.author.mention))
+	else:
+		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `봇 관리자` 권한이 있어야 해요.".format(ctx.author.mention))
 
 @bot.command(name="아키셋")
 @has_permissions(manage_guild=True)
@@ -645,7 +735,7 @@ async def comehere(ctx):
 	else:
 		await ctx.send("<:cs_no:659355468816187405> {} - 죄송해요. 이 명령어는 아직 사용하실 수 없어요.".format(ctx.author.mention))
 
-@bot.command(name="꺼져")
+@bot.command(name="나가")
 async def ggeojyeo(ctx, *args):
 	if ctx.author.id in owners:
 		if not args:
@@ -655,6 +745,22 @@ async def ggeojyeo(ctx, *args):
 			await bot.voice_clients[t].disconnect()
 	else:
 		await ctx.send("<:cs_no:659355468816187405> {} - 죄송해요. 이 명령어는 아직 사용하실 수 없어요.".format(ctx.author.mention))
+
+@bot.command(name="삭제")
+@has_permissions(manage_messages=True)
+async def bulkDelete(ctx, *args):
+	if not args:
+		await ctx.send("<:cs_no:659355468816187405> {} - 메시지를 몇 개 삭제할 건지 적어주세요!".format(ctx.author.mention))
+	else:
+		if args[0].isdecimal() == True:
+			if int(args[0]) > 100 or int(args[0]) <= 0:
+				await ctx.send("<:cs_no:659355468816187405> {} - 숫자가 100을 넘거나, 음수일 수 없어요!".format(ctx.author.mention))
+			else:
+				await ctx.message.delete()
+				await ctx.purge(limit=int(args[0]))
+				await ctx.send("<:cs_yes:659355468715786262> {0} - 총 **{1}**개의 메시지를 삭제했어요!".format(ctx.author.mention))
+		else:
+			await ctx.send("<:cs_no:659355468816187405> {} - 문자열은 적으실 수 없어요!".format(ctx.author.mention))
 
 @bot.command(name="유저")
 async def user_count(ctx):
@@ -738,18 +844,51 @@ async def blacklist(ctx, *args):
 						cur.execute("INSERT INTO users(user, perms) VALUES({}, 'Blacklisted')".format(args[0]))
 						conn.commit()
 						conn.close()
-						await ctx.send("<:cs_yes:659355468715786262> {} - 해당 유저를 DB에 등록함과 동시에, 블랙리스트에 추가했어요!")
+						await ctx.send("<:cs_yes:659355468715786262> {} - 해당 유저를 DB에 등록함과 동시에, 블랙리스트에 추가했어요!".format(ctx.author.mention))
 					else:
-						cur.execute("UPDATE users SET perms = 'Blacklisted' WHERE user = {}".format(args[0]))
-						conn.commit()
-						conn.close()
-						await ctx.send("<:cs_yes:659355468715786262> {} - 해당 유저를 블랙리스트에 추가했어요!")
+						if rows[0][1] == 'Blacklisted' and rows[0][1] == 'Administrator' and rows[0][1] == 'Owner':
+							await ctx.send("<:cs_no:659355468816187405> {} - 해당 유저는 블랙리스트에 추가할 수 없어요. 이미 블랙리스트에 있거나, 봇 관리자에요.".format(ctx.author.mention))
+						else:
+							cur.execute("UPDATE users SET perms = 'Blacklisted' WHERE user = {}".format(args[0]))
+							conn.commit()
+							conn.close()
+							await ctx.send("<:cs_yes:659355468715786262> {} - 해당 유저를 블랙리스트에 추가했어요!".format(ctx.author.mention))
 				else:
-					await ctx.send("<:cs_no:659355468816187405> {} - 그런 유저가 Discord 상에 없어요.".format(ctx.author.id))
+					await ctx.send("<:cs_no:659355468816187405> {} - 그런 유저가 Discord 상에 없어요.".format(ctx.author.mention))
 			else:
-				await ctx.send("<:cs_no:659355468816187405> {} - 문자열은 입력하실 수 없어요.".format(ctx.author.id))
+				await ctx.send("<:cs_no:659355468816187405> {} - 문자열은 입력하실 수 없어요.".format(ctx.author.mention))
 	else:
 		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `봇 관리자` 권한이 있어야 해요.".format(ctx.author.mention))
+
+@bot.command(name="언블랙")
+async def unblack(ctx, *args):
+	conn = sqlite3.connect("lib/data.db")
+	cur = conn.cursor()
+	cur.execute("SELECT * FROM users WHERE user = {}".format(ctx.author.id))
+	rows = cur.fetchall()
+	if rows[0][1] == 'Administrator' or rows[0][1] == "Owner" or ctx.author.id in owners:
+		if not args:
+			await ctx.send("<:cs_no:659355468816187405> {} - 블랙리스트에서 삭제할 유저의 ID를 입력해주세요.".format(ctx.author.id))
+		else:
+			if args[0].isdecimal() == True:
+				u = bot.get_user(int(args[0]))
+				if u is not None:
+					cur.execute("SELECT * FROM users WHERE user = {}".format(int(args[0])))
+					rows = cur.fetchall()
+					if rows[0][1] != 'Blacklisted':
+						await ctx.send("<:cs_no:659355468816187405> {} - 그 유저는 블랙리스트에 없어요.".format(ctx.author.mention))
+					else:
+						cur.execute("UPDATE users SET perms = 'Authenticated' WHERE user = {}".format(args[0]))
+						conn.commit()
+						conn.close()
+						await ctx.send("<:cs_yes:659355468715786262> {} - 해당 유저를 블랙리스트에서 삭제했어요!".format(ctx.author.mention))
+				else:
+					await ctx.send("<:cs_no:659355468816187405> {} - 그런 유저가 Discord 상에 없어요.".format(ctx.author.mention))
+			else:
+				await ctx.send("<:cs_no:659355468816187405> {} - 문자열은 입력하실 수 없어요.".format(ctx.author.mention))
+	else:
+		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `봇 관리자` 권한이 있어야 해요.".format(ctx.author.mention))
+
 
 @bot.command(name="종료")
 async def turnoff(ctx):
@@ -903,6 +1042,11 @@ async def seterror(ctx, error):
 @evaluate.error
 async def evalerror(ctx, error):
 	await ctx.send("입력한 구문을 실행하고 있는데 오류가 발생했어요.\n`{}`".format(error))
+
+@bulkDelete.error
+async def deleteerror(ctx, error):
+	if isinstance(error, CheckFailure):
+		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `메시지 관리` 권한이 있어야 해요.".format(ctx.author.mention))
 
 @bot.event
 async def on_message(msg):
