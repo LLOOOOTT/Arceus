@@ -32,20 +32,21 @@ async def on_ready():
 	print(bot.user.name + "#" + bot.user.discriminator)
 	print(bot.user.id)
 	print("Listening to messages...")
-	while not bot.is_closed():
-		channel_count = 0
-		for guild in bot.guilds:
-			for channel in guild.channels:
-				channel_count += 1
-		statusmsg = ["{0} | {1}ms".format(bot.user.name, round(bot.latency * 1000)), 
-			"{}개의 서버와 함께".format(len(bot.guilds)), 
-			"{}명의 유저와 함께".format(len(bot.users)), 
-			"{}개의 채널과 함께".format(channel_count), 
-			"{} 버전에서 작동".format(version)
-		]
-		for current_status in statusmsg:
-			await bot.change_presence(status=discord.Status.idle, activity=discord.Game(current_status), afk=True)
-			await asyncio.sleep(4)
+	await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Game("이게 뭐하는 걸까"))
+#	while not bot.is_closed():
+#		channel_count = 0
+#		for guild in bot.guilds:
+#			for channel in guild.channels:
+#				channel_count += 1
+#		statusmsg = ["{0} | {1}ms".format(bot.user.name, round(bot.latency * 1000)), 
+#			"{}개의 서버와 함께".format(len(bot.guilds)), 
+#			"{}명의 유저와 함께".format(len(bot.users)), 
+#			"{}개의 채널과 함께".format(channel_count), 
+#			"{} 버전에서 작동".format(version)
+#		]
+#		for current_status in statusmsg:
+#			await bot.change_presence(status=discord.Status.idle, activity=discord.Game(current_status), afk=True)
+#			await asyncio.sleep(4)
 
 @bot.command(name="초대")
 async def invite_link(ctx):
@@ -105,7 +106,7 @@ async def uinfo(ctx, *args):
 			uemb.add_field(name="현재 상태", value="다른 용무 중")
 		if ctx.author.status == discord.Status.offline:
 			uemb.add_field(name="현재 상태", value="오프라인")
-		uemb.add_field(name="역할", value=len(ctx.author.roles) + "개")
+		uemb.add_field(name="역할", value=str(len(ctx.author.roles) - 1) + "개")
 		uemb.add_field
 		uemb.add_field(name="유저 ID", value=ctx.author.id)
 		uemb.add_field(name="디스코드 가입일", value=ctx.author.created_at.strftime('%Y년 %m월 %d일 %H:%M'), inline=False)
@@ -121,11 +122,13 @@ async def feed(ctx, *args):
 		if len(ctx.message.content[4:]) < 5:
 			await ctx.send("<:cs_no:659355468816187405> {} - 5글자 미만의 피드백은 보내실 수 없어요.".format(ctx.author.mention))
 		else:
-			embed = discord.Embed(title="{0.name}#{0.discriminator} 님의 피드백!", description=ctx.message.content[4:], color=0xF4EB94)
+			embed = discord.Embed(title="{0.name}#{0.discriminator} ( {0.id} )님의 피드백!".format(ctx.author), description=ctx.message.content[4:], color=0xF4EB94)
 			embed.set_author(name="건의 / 문의", icon_url=bot.user.avatar_url_as(format="png", size=2048))
 			embed.set_thumbnail(url=ctx.author.avatar_url_as(format="png", size=2048))
 			embed.set_footer(text="아키우스 | {}".format(version))
-			await ctx.send("<:cs_console:659355468786958356> {} - 정말로 개발자에게 이렇게 전송하시겠어요?".format(ctx.author.mention), embed=embed)
+			aa = await ctx.send("<:cs_console:659355468786958356> {} - 정말로 개발자에게 이렇게 전송하시겠어요?".format(ctx.author.mention), embed=embed)
+			await aa.add_reaction("<:cs_yes:659355468715786262>")
+			await aa.add_reaction("<:cs_no:659355468816187405>")
 			def check(reaction, user):
 				return user == ctx.author and reaction.message.channel == ctx.channel
 			
@@ -166,7 +169,7 @@ async def upload(ctx, *args):
 async def arcet(ctx, *args):
 	await ctx.message.delete()
 	if not args:
-		await ctx.send("<:cs_console:659355468786958356> {} - 설정할 값을 지정해야 해요. 설정값은 `.아키셋 설정값` 명령어로 확인하실 수 있어요.".format(ctx.author.mention), delete_after=5)
+		await ctx.send("<:cs_console:659355468786958356> {} - 설정할 값을 지정해야 해요. 설정값은 `,아키셋 설정값` 명령어로 확인하실 수 있어요.".format(ctx.author.mention), delete_after=5)
 	else:
 		conn = sqlite3.connect("lib/data.db")
 		cur = conn.cursor()
@@ -188,7 +191,7 @@ async def arcet(ctx, *args):
 					await asyncio.sleep(3)
 				await setup.edit(content="<:cs_yes:659355468715786262> {} - 서버 기본값이 적용 완료되었어요. 이제 아키우스의 모든 기능을 이용하실 수 있어요.".format(ctx.author.mention), delete_after=10)
 			else:
-				await ctx.send("<:cs_settings:659355468992610304> {} - 이 서버는 초기 설정이 완료되지 않았어요. `.아키셋 초기`를 사용해 초기 설정을 완료해주세요!".format(ctx.author.mention))
+				await ctx.send("<:cs_settings:659355468992610304> {} - 이 서버는 초기 설정이 완료되지 않았어요. `,아키셋 초기`를 사용해 초기 설정을 완료해주세요!".format(ctx.author.mention))
 		else:
 			if args[0] == "초기":
 				await ctx.send("<:cs_settings:659355468992610304> {} - 이미 초기 설정이 완료된 서버에요. 삭제는 관리자에게 문의해주세요.".format(ctx.author.mention))
@@ -552,7 +555,7 @@ async def kick(ctx, members: commands.Greedy[discord.Member], *,
 
 @bot.command(name="중요공지")
 async def announcement_send(ctx, *args):
-	embed = discord.Embed(title="일반 :: {}".format(ctx.message.content.split(";")[1]), description="{}\n \n**봇과 관련된 문의는 LLOOOOTT#2260 혹은 [이 서버](https://discord.gg/HrG4ntB)에서 해주세요!**".format(ctx.message.content.split(";")[2]), color=0xF4EB94)
+	embed = discord.Embed(title="중요 :: {}".format(ctx.message.content.split(";")[1]), description="{}\n \n**봇과 관련된 문의는 LLOOOOTT#2260 혹은 [이 서버](https://discord.gg/HrG4ntB)에서 해주세요!**".format(ctx.message.content.split(";")[2]), color=0xF4EB94)
 	embed.set_author(name="알림", icon_url=bot.user.avatar_url)
 	embed.set_thumbnail(url=bot.user.avatar_url)
 	embed.set_footer(text="배포자 : {0.name}#{0.discriminator}".format(ctx.author))
@@ -598,8 +601,8 @@ async def announcement_send(ctx, *args):
 					cur.execute("UPDATE announce SET enabled = 'false' WHERE guild = {0}".format(row[0]))
 					conn.commit()
 					invalid_channel += 1
-				erem = discord.Embed(description="공지 전송 시도 : `{4}`회\n전송됨 : `{0}`개의 서버\n권한 없음 : `{1}`개의 서버\n잘못된 채널 : {5}\n오류 발생 : `{2}`개의 서버\n전송되지 않은 서버 : `{3}`개의 서버".format(sent, no_perms, error, len(bot.guilds) - sent, no, invalid_channel), color=0xF4EB94)
-				await ctx.send(ctx.author.mention, embed=erem)
+			erem = discord.Embed(description="공지 전송 시도 : `{4}`회\n전송됨 : `{0}`개의 서버\n권한 없음 : `{1}`개의 서버\n잘못된 채널 : {5}\n오류 발생 : `{2}`개의 서버\n전송되지 않은 서버 : `{3}`개의 서버".format(sent, no_perms, error, len(bot.guilds) - sent, no, invalid_channel), color=0xF4EB94)
+			await ctx.send(ctx.author.mention, embed=erem)
 	else:
 		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `봇 관리자` 권한이 있어야 해요.".format(ctx.author.mention))
 
@@ -833,7 +836,7 @@ async def blacklist(ctx, *args):
 	rows = cur.fetchall()
 	if rows[0][1] == 'Administrator' or rows[0][1] == "Owner" or ctx.author.id in owners:
 		if not args:
-			await ctx.send("<:cs_no:659355468816187405> {} - 블랙리스트에 추가할 유저의 ID를 입력해주세요.".format(ctx.author.id))
+			await ctx.send("<:cs_no:659355468816187405> {} - 블랙리스트에 추가할 유저의 ID를 입력해주세요.".format(ctx.author.mention))
 		else:
 			if args[0].isdecimal() == True:
 				u = bot.get_user(int(args[0]))
@@ -868,7 +871,7 @@ async def unblack(ctx, *args):
 	rows = cur.fetchall()
 	if rows[0][1] == 'Administrator' or rows[0][1] == "Owner" or ctx.author.id in owners:
 		if not args:
-			await ctx.send("<:cs_no:659355468816187405> {} - 블랙리스트에서 삭제할 유저의 ID를 입력해주세요.".format(ctx.author.id))
+			await ctx.send("<:cs_no:659355468816187405> {} - 블랙리스트에서 삭제할 유저의 ID를 입력해주세요.".format(ctx.author.mention))
 		else:
 			if args[0].isdecimal() == True:
 				u = bot.get_user(int(args[0]))
@@ -1017,12 +1020,18 @@ async def activate(ctx):
 	cur.execute("SELECT * FROM users WHERE user = {}".format(ctx.author.id))
 	rows = cur.fetchall()
 	if not rows:
-		cur.execute("INSERT INTO users(user, perms) VALUES({}, Authenticated)".format(ctx.author.id))
+		cur.execute("INSERT INTO users(user, perms) VALUES({}, 'Authenticated')".format(ctx.author.id))
 		conn.commit()
 		conn.close()
 		await ctx.send("<:cs_yes:659355468715786262> {} - 당신의 계정을 활성화했어요! 이제 모든 명령어를 이용하실 수 있어요!".format(ctx.author.mention))
 	else:
-		await ctx.send("<:cs_no:659355468816187405> {} - 이미 활성화된 계정이에요.".format(ctx.author.mention))
+		if rows[0][1] == "Not Authenticated":
+				cur.execute("UPDATE users SET perms = 'Authenticated' WHERE user = {}".format(ctx.author.id))
+				conn.commit()
+				conn.close()
+				await ctx.send("<:cs_yes:659355468715786262> {} - 당신의 계정을 활성화했어요! 이제 모든 명령어를 이용하실 수 있어요!".format(ctx.author.mention))
+		else:
+				await ctx.send("<:cs_no:659355468816187405> {} - 이미 활성화된 계정이에요.".format(ctx.author.mention))
 
 @ban.error
 async def banerr(ctx, error):
@@ -1083,13 +1092,12 @@ async def on_message(msg):
 			cur.execute("INSERT INTO Users(user, perms) VALUES({}, 'Not Authenticated')".format(msg.author.id))
 			conn.commit()
 			conn.close()
-			await msg.channel.send("<:cs_id:659355469034422282> {} - 등록되지 않은 사용자입니다. `.활성화` 명령어를 사용해보세요!".format(msg.author.mention))
 		else:
 			if rows[0][1] == "Not Authenticated":
-				if msg.content == prefix + "활성화":
+				if msg.content == prefix + "활성화" or msg.content == prefix + "아키":
 					await bot.process_commands(msg)
 				else:
-					await msg.channel.send("<:cs_id:659355469034422282> {} - 등록되지 않은 사용자입니다. `.활성화` 명령어를 사용해보세요!".format(msg.author.mention))
+					return
 			else:
 				if rows[0][1] == "Blacklisted" and msg.author.id not in owners:
 					await msg.channel.send("<:cs_no:659355468816187405> {} - 명령어 사용이 제한되셨어요. 차단 해제는 관리자에게 문의해주세요.".format(msg.author.mention))
@@ -1102,7 +1110,7 @@ async def on_message(msg):
 						if msg.content == prefix + "아키셋 초기":
 							await bot.process_commands(msg)
 						else:
-							await msg.channel.send("<:cs_id:659355469034422282> {} - 등록되지 않은 서버입니다. 관리자에게 `.아키셋 초기` 명령어 사용을 요청해보세요!".format(msg.author.mention))
+							await msg.channel.send("<:cs_id:659355469034422282> {} - 등록되지 않은 서버입니다. 관리자에게 `,아키셋 초기` 명령어 사용을 요청해보세요!".format(msg.author.mention))
 					else:
 						await bot.process_commands(msg)
 
@@ -1112,7 +1120,7 @@ async def on_guild_join(guild):
 		select = 0
 		channel = guild.text_channels[select]
 		try:
-			await channel.send("{0.name}를 초대해주셔서 감사해요!\n{0.name}를 사용하기 위해서는 서버를 활성화해야 해요.\n이를 위해 `서버 관리` 권한을 가진 유저가 아래 지침을 따라주세요.\n0. 서버를 활성화할 관리자가 `.활성화`를 입력한다.\n1. 봇이 메시지를 관리할 수 있는 채널에서 `.아키셋 초기` 를 입력한다.\n2. 초기 설정이 완료되면 사용하실 수 있어요.\n*초기 설정이 완료되면 초기 설정을 한 채널에 자동적으로 중요 공지가 전달됩니다.*".format(bot.user))
+			await channel.send("{0.name}를 초대해주셔서 감사해요!\n{0.name}를 사용하기 위해서는 서버를 활성화해야 해요.\n이를 위해 `서버 관리` 권한을 가진 유저가 아래 지침을 따라주세요.\n0. 서버를 활성화할 관리자가 `,활성화`를 입력한다.\n1. 봇이 메시지를 관리할 수 있는 채널에서 `,아키셋 초기` 를 입력한다.\n2. 초기 설정이 완료되면 사용하실 수 있어요.\n*초기 설정이 완료되면 초기 설정을 한 채널에 자동적으로 중요 공지가 전달됩니다.*".format(bot.user))
 			break
 		except:
 			select += 1
