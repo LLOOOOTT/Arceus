@@ -21,7 +21,6 @@ bot = commands.Bot(command_prefix=prefix)
 version = settings.Version
 Token = settings.Token
 owners = settings.Owners
-filtering = settings.LinkFiltering
 
 
 
