@@ -44,10 +44,17 @@ async def on_ready():
 	print(bot.user.name + "#" + bot.user.discriminator)
 	print(bot.user.id)
 	print("Listening to messages...")
+	conn = sqlite3.connect("lib/data.db")
+	cur = conn.cursor()
+	cur.execute("UPDATE bot SET uptime = '{}'".format(datetime.datetime.now()))
+	conn.commit()
+	conn.close()
 	while not bot.is_closed():
 		channel_count = 0
 		for guild in bot.guilds:
-			for channel in guild.channels:
+			for channel in guild.text_channels:
+				channel_count += 1
+			for channel in guild.voice_channels:
 				channel_count += 1
 		statusmsg = ["{0} | {1}ms".format(bot.user.name, round(bot.latency * 1000)), 
 			"{}개의 서버와 함께".format(len(bot.guilds)), 
@@ -61,10 +68,7 @@ async def on_ready():
 
 @bot.command(name="초대")
 async def invite_link(ctx):
-	if version == settings.TestVersion and ctx.author.id not in owners:
-		await ctx.send("{} - 테스트 봇은 초대하실 수 없어요.".format(ctx.author.mention))
-	else:
-		await ctx.send("{0} - 여기 있어요!\nhttps://discordapp.com/oauth2/authorize?client_id={1}&permissions=842394975&scope=bot".format(ctx.author.mention, bot.user.id))
+	await ctx.send("{0} - 여기 있어요!\nhttps://discordapp.com/oauth2/authorize?client_id={1}&permissions=842394975&scope=bot".format(ctx.author.mention, bot.user.id))
 
 @bot.command(name="차단")
 @has_permissions(ban_members=True)
@@ -118,7 +122,6 @@ async def uinfo(ctx, *args):
 		if ctx.author.status == discord.Status.offline:
 			uemb.add_field(name="현재 상태", value="오프라인")
 		uemb.add_field(name="역할", value=str(len(ctx.author.roles) - 1) + "개")
-		uemb.add_field
 		uemb.add_field(name="유저 ID", value=ctx.author.id)
 		uemb.add_field(name="디스코드 가입일", value=ctx.author.created_at.strftime('%Y년 %m월 %d일 %H:%M'), inline=False)
 		uemb.add_field(name="{} 가입일".format(ctx.guild.name), value=ctx.author.joined_at.strftime('%Y년 %m월 %d일 %H:%M'), inline=False)
@@ -318,13 +321,19 @@ async def arcet(ctx, *args):
 								await ws.edit(content="<:cs_no:659355468816187405> {} - 유저 환영 메시지와 채널을 설정하지 않으시는 걸로 알아둘게요!\n현재 채널이 설정되어 있지 않아요. | 현재 출력되는 메시지가 등록되지 않았어요.".format(ctx.author.mention), suppress=False, delete_after=5)
 
 							if channel is None and welcomemsg != 'None':
-								await ws.edit(content="<:cs_no:659355468816187405> {0} - 유저 환영 메시지와 채널을 설정하지 않으시는 걸로 알아둘게요!\n현재 채널이 설정되어 있지 않아요. | 현재 출력되는 메시지는 {1}(이)에요.".format(ctx.author.mention, welcomemsg), suppress=False, delete_after=5)
+								latest = welcomemsg.replace("{0.mention}", str(ctx.author.mention))
+								latest2 = latest.replace("{1.name}", str(ctx.guild.name))
+								latest3 = latest2.replace("{1.member_count}", str(ctx.guild.member_count))
+								await ws.edit(content="<:cs_no:659355468816187405> {0.mention} - 유저 환영 메시지와 채널을 설정하지 않으시는 걸로 알아둘게요!\n현재 채널이 설정되어 있지 않아요. | 현재 출력되는 메시지는 {1}(이)에요.".format(ctx.author.mention, latest3), suppress=False, delete_after=5)
 								
 							if channel is not None and welcomemsg == 'None':
-								await ws.edit(content="<:cs_no:659355468816187405> {0} - 유저 환영 메시지와 채널을 설정하지 않으시는 걸로 알아둘게요!\n현재 채널은 <#{1}> 채널이에요. | 현재 출력되는 메시지가 등록되지 않았어요.".format(ctx.author.mention, channel.id), suppress=False, delete_after=5)
+								await ws.edit(content="<:cs_no:659355468816187405> {0.mention} - 유저 환영 메시지와 채널을 설정하지 않으시는 걸로 알아둘게요!\n현재 채널은 <#{2}> 채널이에요. | 현재 출력되는 메시지가 등록되지 않았어요.".format(ctx.author, channel.id), suppress=False, delete_after=5)
 								
 							if channel is not None and welcomemsg != 'None':
-								await ws.edit(content="<:cs_no:659355468816187405> {0} - 유저 환영 메시지와 채널을 설정하지 않으시는 걸로 알아둘게요!\n현재 채널은 <#{1}> 채널이에요. | 현재 출력되는 메시지는 {2}(이)에요.".format(ctx.author.mention, channel.id, welcomemsg), suppress=False, delete_after=5)
+								latest = welcomemsg.replace("{0.mention}", str(ctx.author.mention))
+								latest2 = latest.replace("{1.name}", str(ctx.guild.name))
+								latest3 = latest2.replace("{1.member_count}", str(ctx.guild.member_count))
+								await ws.edit(content="<:cs_no:659355468816187405> {0.mention} - 유저 환영 메시지와 채널을 설정하지 않으시는 걸로 알아둘게요!\n현재 채널은 <#{1}> 채널이에요. | 현재 출력되는 메시지는 {2}(이)에요.".format(ctx.author.mention, channel.id, latest3), suppress=False, delete_after=5)
 						else:
 							await ws.edit(content="<:cs_settings:659355468992610304> {} - 설정할 메시지를 입력해주세요. 아래는 메시지에 쓸 수 있는 함수에요.\n[멘션] - 들어온 유저를 멘션합니다.\n[서버] - 서버 이름을 출력합니다.\n[유저수] - 서버의 유저 명수를 출력합니다.".format(ctx.author.mention))
 							await ws.clear_reactions()
@@ -393,7 +402,7 @@ async def arcet(ctx, *args):
 					if str(reaction.emoji) == "<:cs_yes:659355468715786262>":
 						conn = sqlite3.connect("lib/data.db")
 						cur = conn.cursor()
-						cur.execute("UPDATE customWelcome SET enabled = 'true' WHERE guild = {}".format(ctx.guild.id))
+						cur.execute("UPDATE customBye SET enabled = 'true' WHERE guild = {}".format(ctx.guild.id))
 						conn.commit()
 						conn.close()
 						await ws.edit(content="<:cs_yes:659355468715786262> {} - 유저 퇴장 알림 기능을 활성화했어요.\n메시지와 채널을 변경하시려면 아래 <:cs_settings:659355468992610304> 반응을 눌러주세요!".format(ctx.author.mention), suppress=False)
@@ -415,12 +424,18 @@ async def arcet(ctx, *args):
 								await ws.edit(content="<:cs_no:659355468816187405> {} - 유저 퇴장 알림 메시지와 채널을 설정하지 않으시는 걸로 알아둘게요!\n현재 채널이 설정되어 있지 않아요. | 현재 출력되는 메시지가 등록되지 않았어요.".format(ctx.author.mention), suppress=False, delete_after=5)
 
 							if channel is None and welcomemsg != 'None':
+								latest = welcomemsg.replace("{0.mention}", str(ctx.author.mention))
+								latest2 = latest.replace("{1.name}", str(ctx.guild.name))
+								latest3 = latest2.replace("{1.member_count}", str(ctx.guild.member_count))
 								await ws.edit(content="<:cs_no:659355468816187405> {0} - 유저 퇴장 알림 메시지와 채널을 설정하지 않으시는 걸로 알아둘게요!\n현재 채널이 설정되어 있지 않아요. | 현재 출력되는 메시지는 {1}(이)에요.".format(ctx.author.mention, welcomemsg), suppress=False, delete_after=5)
 									
 							if channel is not None and welcomemsg == 'None':
 								await ws.edit(content="<:cs_no:659355468816187405> {0} - 유저 퇴장 알림 메시지와 채널을 설정하지 않으시는 걸로 알아둘게요!\n현재 채널은 <#{1}> 채널이에요. | 현재 출력되는 메시지가 등록되지 않았어요.".format(ctx.author.mention, channel.id), suppress=False, delete_after=5)
 									
 							if channel is not None and welcomemsg != 'None':
+								latest = welcomemsg.replace("{0.mention}", str(ctx.author.mention))
+								latest2 = latest.replace("{1.name}", str(ctx.guild.name))
+								latest3 = latest2.replace("{1.member_count}", str(ctx.guild.member_count))
 								await ws.edit(content="<:cs_no:659355468816187405> {0} - 유저 퇴장 알림 메시지와 채널을 설정하지 않으시는 걸로 알아둘게요!\n현재 채널은 <#{1}> 채널이에요. | 현재 출력되는 메시지는 {2}(이)에요.".format(ctx.author.mention, channel.id, welcomemsg), suppress=False, delete_after=5)
 						else:
 							await ws.edit(content="<:cs_settings:659355468992610304> {} - 설정할 메시지를 입력해주세요. 아래는 메시지에 쓸 수 있는 함수에요.\n[태그] - 나간 유저의 태그를 출력합니다.\n[서버] - 서버 이름을 출력합니다.\n[유저수] - 서버의 유저 명수를 출력합니다.".format(ctx.author.mention))
@@ -679,7 +694,14 @@ async def announcement_send(ctx, *args):
 
 @bot.command(name="핑")
 async def ping(ctx):
-	await ctx.send(":ping_pong: {0} - 루트! | API Latency : `{1}`ms".format(ctx.author.mention, round(bot.latency * 1000)))
+	conn = sqlite3.connect("lib/data.db")
+	cur = conn.cursor()
+	cur.execute("SELECT * FROM bot")
+	rows = cur.fetchall()
+	t = rows[0][0]
+	a = datetime.datetime.now() - datetime.datetime.strptime(t[:19], "%Y-%m-%d %H:%M:%S")
+	b = datetime.datetime.strptime(str(a)[:6], "%H:%M:%S")
+	await ctx.send(":ping_pong: {0} - 루트! | API Latency : `{1}`ms | 작동 시간 ( 업타임 ) : {2}".format(ctx.author.mention, round(bot.latency * 1000), b.strftime("%H시간 %M분 %S초")))
 
 @bot.command(name="서버")
 async def serverlist(ctx):
@@ -778,7 +800,7 @@ async def bulkDelete(ctx, *args):
 			else:
 				await ctx.message.delete()
 				await ctx.channel.purge(limit=int(args[0]))
-				await ctx.send("<:cs_yes:659355468715786262> {0} - 총 **{1}**개의 메시지를 삭제했어요!".format(ctx.author.mention, args[0]))
+				await ctx.send("<:cs_yes:659355468715786262> {0} - 총 **{1}**개의 메시지를 삭제했어요!".format(ctx.author.mention, args[0]), delete_after=5)
 		else:
 			await ctx.send("<:cs_no:659355468816187405> {} - 문자열은 적으실 수 없어요!".format(ctx.author.mention))
 
@@ -1091,15 +1113,15 @@ async def activate(ctx):
 		else:
 				await ctx.send("<:cs_no:659355468816187405> {} - 이미 활성화된 계정이에요.".format(ctx.author.mention))
 
-#@ban.error
-#async def banerr(ctx, error):
-#	if isinstance(error, CheckFailure):
-#		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `멤버 차단` 권한이 있어야 해요.".format(ctx.author.mention))
+@ban.error
+async def banerr(ctx, error):
+	if isinstance(error, CheckFailure):
+		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `멤버 차단` 권한이 있어야 해요.".format(ctx.author.mention))
 
-#@kick.error
-#async def kickerr(ctx, error):
-#	if isinstance(error, CheckFailure):
-#		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `멤버 추방` 권한이 있어야 해요.".format(ctx.author.mention))
+@kick.error
+async def kickerr(ctx, error):
+	if isinstance(error, CheckFailure):
+		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `멤버 추방` 권한이 있어야 해요.".format(ctx.author.mention))
 
 @arcet.error
 async def seterror(ctx, error):
@@ -1110,10 +1132,10 @@ async def seterror(ctx, error):
 async def evalerror(ctx, error):
 	await ctx.send("입력한 구문을 실행하고 있는데 오류가 발생했어요.\n`{}`".format(error))
 
-#@bulkDelete.error
-#async def deleteerror(ctx, error):
-#	if isinstance(error, CheckFailure):
-#		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `메시지 관리` 권한이 있어야 해요.".format(ctx.author.mention))
+@bulkDelete.error
+async def deleteerror(ctx, error):
+	if isinstance(error, CheckFailure):
+		await ctx.send("<:cs_no:659355468816187405> {} - 권한이 없어요. 이 명령어를 사용하려면 `메시지 관리` 권한이 있어야 해요.".format(ctx.author.mention))
 
 @bot.event
 async def on_message(msg):
@@ -1143,16 +1165,17 @@ async def on_message(msg):
 		cur = conn.cursor()
 		cur.execute("SELECT * FROM Users WHERE user = {}".format(msg.author.id))
 		rows = cur.fetchall()
-		if not rows:
+		if not rows and msg.guild.id != 686523016158380052:
 			cur.execute("INSERT INTO Users(user, perms) VALUES({}, 'Not Authenticated')".format(msg.author.id))
 			conn.commit()
 			conn.close()
+			await ctx.send("<:cs_id:659355469034422282> {} - 등록되지 않은 사용자입니다. `.활성화` 명령어를 사용해보세요!".format(ctx.author.mention))
 		else:
-			if rows[0][1] == "Not Authenticated":
+			if rows[0][1] == "Not Authenticated" and msg.guild.id != 686523016158380052:
 				if msg.content == prefix + "활성화" or msg.content == prefix + "아키":
 					await bot.process_commands(msg)
 				else:
-					return
+					await ctx.send("<:cs_id:659355469034422282> {} - 등록되지 않은 사용자입니다. `.활성화` 명령어를 사용해보세요!".format(ctx.author.mention))
 			else:
 				if rows[0][1] == "Blacklisted" and msg.author.id not in owners:
 					await msg.channel.send("<:cs_no:659355468816187405> {} - 명령어 사용이 제한되셨어요. 차단 해제는 관리자에게 문의해주세요.".format(msg.author.mention))
